@@ -1,5 +1,6 @@
 ﻿using Cortex.Mediator;
 using HngStageOne.Application.Features.Profiles.CreateProfile;
+using HngStageOne.Application.Features.Profiles.GetAllProfiles;
 using HngStageOne.Application.Features.Profiles.GetProfileById;
 using HngStageOne.Application.Features.Profiles.Responses;
 using HngStageOne.Controllers.Profiles.Requests;
@@ -70,4 +71,34 @@ public class ProfilesController(IMediator mediator) : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, result.Error);
         }
     }
+
+
+    [HttpGet]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(SuccessResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetAll([FromQuery] string? gender, [FromQuery] string? country_id, [FromQuery] string? age_group, CancellationToken cancellationToken)
+    {
+        var result = await mediator.SendQueryAsync(new GetAllProfilesQuery(gender, country_id, age_group), cancellationToken);
+
+        try
+        {
+            if (result.Succeeded)
+            {
+                return Ok(result.Data);
+            }
+
+            if (result.Error!.Status == "502")
+            {
+                return StatusCode(StatusCodes.Status502BadGateway, result.Error);
+            }
+
+            return BadRequest(result.Error);
+        }
+        catch (Exception)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, result.Error);
+        }
+    }
+
 }

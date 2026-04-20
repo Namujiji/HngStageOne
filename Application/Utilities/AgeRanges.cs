@@ -22,4 +22,17 @@ public static class AgeRanges
 
         return "unknown";
     }
+
+    public static string? GetValue(string key)
+    {
+        foreach (var kvp in Ranges)
+        {
+            if (kvp.Key.Equals(key, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return kvp.Key;
+            }
+        }
+
+        return null;
+    }
 }
