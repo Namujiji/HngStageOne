@@ -1,5 +1,6 @@
 ﻿using Cortex.Mediator;
 using HngStageOne.Application.Features.Profiles.CreateProfile;
+using HngStageOne.Application.Features.Profiles.DeleteProfileById;
 using HngStageOne.Application.Features.Profiles.GetAllProfiles;
 using HngStageOne.Application.Features.Profiles.GetProfileById;
 using HngStageOne.Application.Features.Profiles.Responses;
@@ -17,7 +18,6 @@ public class ProfilesController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(SuccessResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(DuplicateResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status502BadGateway)]
     public async Task<IActionResult> Create(CreateProfile createProfile, CancellationToken cancellationToken)
@@ -48,6 +48,8 @@ public class ProfilesController(IMediator mediator) : ControllerBase
     [Produces("application/json")]
     [ProducesResponseType(typeof(SuccessResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status502BadGateway)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var result = await mediator.SendQueryAsync(new GetProfileByIdQuery(id), cancellationToken);
@@ -77,6 +79,8 @@ public class ProfilesController(IMediator mediator) : ControllerBase
     [Produces("application/json")]
     [ProducesResponseType(typeof(SuccessResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status502BadGateway)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetAll([FromQuery] string? gender, [FromQuery] string? country_id, [FromQuery] string? age_group, CancellationToken cancellationToken)
     {
         var result = await mediator.SendQueryAsync(new GetAllProfilesQuery(gender, country_id, age_group), cancellationToken);
@@ -101,4 +105,33 @@ public class ProfilesController(IMediator mediator) : ControllerBase
         }
     }
 
+    [HttpDelete("{id:guid}")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status502BadGateway)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await mediator.SendCommandAsync(new DeleteProfileByIdCommand(id), cancellationToken);
+
+        try
+        {
+            if (result.Succeeded)
+            {
+                return NoContent();
+            }
+
+            if (result.Error!.Status == "502")
+            {
+                return StatusCode(StatusCodes.Status502BadGateway, result.Error);
+            }
+
+            return BadRequest(result.Error);
+        }
+        catch (Exception)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, result.Error);
+        }
+    }
 }
